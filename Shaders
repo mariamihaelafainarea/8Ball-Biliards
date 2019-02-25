@@ -1,0 +1,19 @@
+#version 330
+
+// TODO: get values from fragment shader
+//ce primeste de la vertex shader
+in vec3 frag_normal;
+
+//ceea ce pleaca mai departe
+//cu vertex shader interactioneaza direct ,fara pipe :)
+layout(location = 0) out vec4 out_color;
+
+//ceea ce vine
+in vec3 frag_color;
+
+void main()
+{
+	// TODO: write pixel out color
+		out_color = vec4(frag_color, 1);
+
+}
