@@ -1,0 +1,210 @@
+Student: Fainarea Maria-Mihaela		    |
+Facultatea: Automatica si Calculatoare	    |
+Sectia: Calculatoare			    |
+Grupa: 332CA				    |
+Materia: Elemente de grafica pe calculator  |
+Tema: numarul 2				    |
+____________________________________________|
+
+Joc de Biliard
+
+Design:
+
+1. Paralelipipedele care compun masa
+sunt facute in OpenGl din vertecsi si indecsi. Pentru margini una din
+fete e colorata altfel incat sa para mai realist (fata interioara mesei).
+Pentru aceasta constructie am folosit un site de pe internet 
+https://github.com/SonarSystems/OpenGL-Tutorials/blob/master/Drawing%20A%20Cube/main.cpp 
+si am adaptat construirea de aici a unui cub, in constructia mea a unui 
+paralelipiped. 
+2.Gaurile sunt facute in blender si se gasesc in fisierul mySphere3.obj
+3.Mingiile sunt importate din meshele din framework (din Primitives)
+4.Tacul este tot un paralelipiped foarte subtire pe care am aplicat
+vederea perspectiva cu un fov de 45. Acest lucru se vede daca ne pozitionam
+sub tac. Liniile lui vor converge.
+
+Implementare:
+
+Vederea top-down am implementat-o ridicand camera in pozitia (0,4,0)
+si punand camera sa primeasca inspre centrul mesei (care e si centrul axelor
+de coordonate (0,0,0) iar vectorul up sa fie (0, 0, 1). Aici a fost necesara
+si o rotirea camerei la unghi de 90 de grade. Mi s-a parut mai realist sa pun
+zona unde sta bila alba(in prima treime - la inceput sau la fault) mai aproape de utilizator.
+
+Am facut mai multe vederi :
+
+1. Top-down
+2. Vedere third-person foarte aproape de tac. (se activeaza cand apas pe space)
+3. O vedere care pe mine personal ma ajuta sa ma pozitionez atunci
+cand vreau sa lovesc bila. Estea aproape ca vederea de cand apas pe space dar 
+aici camera este un pic mai sus. (+ 0.15f pe y)
+
+!!!!!!!
+2.Un lucru in plus la vederea aceasta este ca am facut ca atunci cand userul
+da drumul butonului rightClick sa se duca direct in vederea SPACE. Mi s-a parut
+mai usor pentru utilizator sa se intample asa decat sa apase ele mereu.
+
+
+Animatia tac-ului am facut-o ca la un bonus de la laborator.
+Am utilizat pentru aceasta functia ElapsedTime. Am folosit functia sinus pentru a 
+obtine miscarea du-te-vino dar a trebuit sa impart la 10 pentru ca bilele,
+sunt scalate de la dimensiune 1 la dimensiune 0.1. De aici pentru a obtine intensitatea 
+(BilaAlba.speed) a bilei albe , pentru ca sinusul este intre -0.1 si 0.1 am adaugat 0.1 
+(pt a trece totul in partea pozitiva) si am continuat prin a face proportionala miscarea
+prin inmultire.  (0.2 - (elapsedTime + 0.1)). Acel 0.2 - e utilizat pentru invers
+ proportionalitatea intensitatii fata de distanta .
+
+Disparitia bilei in buzunar :
+
+Aici am folosit functia "CollisionWhithHoles" care doar face coliziunea ca intre doua cercuri. 
+Preia zona in care e bila neagra si cea in care e bila in miscare si vede daca distanta dintre
+ele e mai mica decat suma razelor. Totusi in utilizarea functiei mereu dau jumatate din
+raza bilei in miscare pentru a face animatia de disparitie mai realista.
+Disparitia o fac cu ajutorul unei variabile .setVisible care va ajuta la randarea bilelor.
+Daca Visible nu e activat nu le va randa.
+
+Coliziunile cu manta:
+
+Cum manta desi are 0.3 ca latime, dupa scalare are 0.15 . Adunand raza bilelor 0.1 => 0.25
+ =>Coliziunea cu mantaua se face atunci cand bila este la 0.25 distanta de marginile exterioare
+ale mantei. De aici verificarile cu +/- 1.75 +/- 0.75. Aceste verificari se fac separat
+pt bila alba fata de celalalte bile. Totusi, ambele se fac in zonele in care se face
+deplasarea pe axele X si Z ale bilelor.
+
+Coliziunile bila-bila:
+
+Am urmat codul din link-ul pus pe site-ul temei. Aici am doua functii. Prima - "collision"
+ - deteactaza daca cele doua bile au colizionat. Daca da => Se face schimbarea vitezelor 
+in momentul ciocnirii in functia "collisionWithBalls". De remarcat este ca in functia 
+collision din cauza scalarilor facute am avut nevoie de modificari. Raza bilei este 0.1 asa
+ca, velocitatile trebuie sa fie proportionale cu aceasta dimensiune si de aici rezulta 
+acea impartire repetata a velocitatilor la 10 ,oriunde apar ele. In plus masa a fost si ea 
+scalata la jumatatea dimensiunii si de aceea pozitiile trebuie si ele inmultite cu 2. 
+Totul trebuie sa fie in acelasi sistem de proportii. Altfel detectia este imposibila. In 
+functia "collisionWithBalls" insa nu mai e nevoie de aceste modificari. 
+
+Obtinerea vitezelor se face mai apoi utilizand urmatorul model:
+
+	Pentru ca in functia collisionWithBalls am utilizat atat speed-ul cat si velocitatile
+(pentru a iesi corect) acum trebuie sa despart viteza rezultata in directie si intensitate 
+asa ca utilizez normalizarea unui vector =>
+
+pt   a[3 1 2] =>
+    ax = 3,
+    ay = 1,
+    az = 2,
+
+   |a| = sqrt((ax * ax) + (ay * ay) + (az * az))
+
+    x = ax/|a|
+    y = ay/|a|
+    z = az/|a|
+
+exact ca pe acest site : http://www.fundza.com/vectors/normalize/
+	In plus, verific daca nu cumva modulul e 0 ca sa nu impart la 0 si sa-mi faca
+probleme.
+	Voi explica mai jos zona in care utilizez aceste functii atunci cand o sa explic
+toata logica programului si a actualizarilor.
+
+Afisarea la stdout
+
+Este facuta in functia "statistici". In functie de player-ul curent
+se afiseaza in ordine dupa acesta si celalalt. Mereu primul afisat va fi cel
+care este la rand.
+Fault-urile se afiseaza tot aici.
+
+Am considerat ca si fault-uri :
+
+1. cand bila alba intra in gaura indiferent de ce s-a intamplat pe parcurs.
+2. cand jucatorul curent atinge mai intai o bila care nu este a lui.
+
+!!!!!!!!!!!!!!!!!!!! In plus am adaugat eu :
+
+3. cand este bagata o bila care nu e de culoarea playerului curent (playerul ce are
+culoare rosie nu poate baga bile galbene !!!)
+
+Pentru fault-uri am utilizat 2 variabile asignate fiecarui jucator: 
+
+	primaBilaOk si primaBilaLovita.
+
+	primaBilaLovita == true => prima bila cu care colizioneaza bila alba e 
+prima bila din aceasta lovitura. Dupa ea primaBilaLovita == false => 
+toate nu vor mai intra in zonele de test ale primei.
+
+	primaBilaOk == true => Daca s-au stabilit culorile, primaBilaOk == true =>
+player-ul a bagat bila care trebuie
+		     == false => A bagat bila adversarului.
+	La inceput nu conteaza ce valoare are primaBilaOk.
+Ea va avea insemnatate abia cand primaBilaLovita devine "false".
+
+	Verificarile acestor variabile le fac in for-urile in care se testeaza 
+daca bila alba colizioneaza alte bile - La inceput de Update. Daca nu se loveste prima data
+ceea ce trebuie variabila faults din cadrul fiecarui player e incrementata.
+	Tot aceste variabile mai sunt utlizate si atunci cand in gaura intra vreo bila
+colorata. Daca am lovit la inceput o bila care nu e a mea am setat sa nu se ia 
+in considerare ce bila bag in gaura. Daca prima bila nu a fost ok , chiar daca bila
+din gaura e de culoarea mea => nu conteaza la scor.
+Daca bila bagata in gaura e gresita => oricum schimbam randul => nu mai fac
+asta (as schimba la randul initial).
+	Le mai utilizez si la sfarsitul rundei , dupa ce toate bilele se opresc, in cadrul
+ if (allBallsAreStopped == 1) {
+}. 
+	Aici se va verifica daca :
+	1. Daca inca nu s-a bagat nicio bila si nu s-au ales culorile playerilor => se schimba 
+doar  randul
+	2. Culorile au fost alese si am atins bila gresita 
+=> duce la a putea repozitiona bila  (asta ajuta cand bag o bila corecta, dar prima atinsa nu a fost ok)
+si bila alba se intoarce in prima treime  (asta se executa indiferent daca am bagat sau nu
+o bila
+)
+	3. nu s-a bagat nicio bila si nu am atins nicio bila  dar culorile au fost alese
+=> nu e fault dar se schimba randul
+	4.Culorile au fost alese dar nu s-a bagat nicio bila si am atins bila corecta =>
+se schimba randul
+	5.Culorile au fost alese dar nu s-a adaugat nicio bila si am atins bila incorecta =>
+se schimba randul si se repozitioneaza bila alba.
+	Se reintializeaza aceste 2 variabilele la incheierea miscarii bilelor de pe masa.
+	
+	Logica unui frame este in felul urmator :
+-Se verifica daca este cazul de o vedere topDown.
+-Se verifica coliziunea bilei albe cu celelalte bile si pe "else" coliziunea celorlalte bile
+cu bila alba.
+-Se verifica coliziunea bilelor intre ele
+-Se verifica daca e cazul sa mutam bilele in miscare la alte pozitii(doar bilele colorate)
+-Se verifica coliziunea cu gaurile a bilei albe.
+-Se verifica coliziunile dintre bilele colorate cu gaurile
+ 	*vedem daca am primit bila neagra
+ 	* daca nu , vedem in ce stadiu e alegerea playerilor
+	*daca playerii nu au fost alesi si avem coliziune setam culorile,crestem
+numarul de bile ale playerul curent
+	*daca playerii au fost alesi , vedem daca nu cumva coliziunea e cu prima bila
+din acest tur si daca e bila potrivita sau nu 
+-randam toate formele
+-calculam ce se intampla cu bila alba - daca e in miscare o deplasam si o
+randam la pozitia noua
+	* ca si "coeficient de frecare" folosesc o functie de gradul 2 care il are mereu pe x
+0.001 pt bila alba si pt bilele celelalte 0.002 (pentru a se opri mai repede)
+-se randeaza tac-ul in functie de ce facem in acel moment
+	* daca este apasat left-click => se face animatia du-te-vino explicata mai sus. Aici
+se foloseste "releaseAngle" pt rotatie , pt ca tacul nu mai trebuie sa se miste
+	* daca este apasat right-click => se face rotatia dupa deltaXMouseMove (preia miscarea
+din acel moment)
+	* Altfel se randeaza tacul in pozitie obisnuita spre utilizator, rotit cu
+releaseAngle
+-La sfarsitul miscarii tuturor bilelor se fac comparatiile de mai sus in functie de ceea ce s-a
+intamplat pe parcursul rundei.
+
+Structuri speciale :
+Player,
+Bile,
+hole,
+ajutor - are inauntru 2 vectori pentru a prelua vitezele
+din functia de coliziune si a le transmite inapoi 
+
+
+
+
+
+
+
+
